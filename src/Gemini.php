@@ -5,8 +5,16 @@ declare(strict_types=1);
 namespace Scott\GeminiPhp;
 
 use RuntimeException;
+use Scott\GeminiPhp\Contract\RequestContract;
+use Scott\GeminiPhp\Enum\GeminiModel;
+use Scott\GeminiPhp\Request\CountToken;
+use Scott\GeminiPhp\Request\GenerateData;
+use Scott\GeminiPhp\Request\ModelList;
+use Scott\GeminiPhp\Response\ContentResponse;
+use Scott\GeminiPhp\Response\ModelResponse;
+use Scott\GeminiPhp\Response\TokenResponse;
 
-class GeminiPhp
+class Gemini
 {
     protected const API_KEY_HEADER_NAME = 'x-goog-api-key';
 
@@ -28,10 +36,10 @@ class GeminiPhp
 
     public function geminiPro(): GenerativeModel
     {
-        return $this->generativeModel(ModelName::GeminiPro);
+        return $this->generativeModel(GeminiModel::PRO);
     }
 
-    protected function generativeModel(ModelName $modelName): GenerativeModel
+    protected function generativeModel(GeminiModel $modelName): GenerativeModel
     {
         return new GenerativeModel(
             $this,
@@ -41,18 +49,18 @@ class GeminiPhp
 
     public function geminiProVision(): GenerativeModel
     {
-        return $this->generativeModel(ModelName::GeminiProVision);
+        return $this->generativeModel(GeminiModel::PRO_VISION);
     }
 
-    public function generateContent(GenerateContentRequest $request): GenerateContentResponse
+    public function generateContent(GenerateData $request): ContentResponse
     {
-        $response = $this->doRequest($request);
+        $response = $this->makeRequest($request);
         $json = json_decode($response, associative: true);
 
-        return GenerateContentResponse::fromArray($json);
+        return ContentResponse::fromArray($json);
     }
 
-    protected function doRequest(RequestInterface $request): string
+    protected function makeRequest(RequestContract $request): string
     {
         if (!isset($this->client, $this->requestFactory, $this->streamFactory)) {
             throw new RuntimeException('Missing client or factory for Gemini API operation');
@@ -85,21 +93,21 @@ class GeminiPhp
         return (string)$response->getBody();
     }
 
-    public function countTokens(CountTokensRequest $request): CountTokensResponse
+    public function countTokens(CountToken $request): TokenResponse
     {
-        $response = $this->doRequest($request);
+        $response = $this->makeRequest($request);
         $json = json_decode($response, true);
 
-        return CountTokensResponse::fromArray($json);
+        return TokenResponse::fromArray($json);
     }
 
-    public function listModels(): ListModelsResponse
+    public function listModels(): ModelResponse
     {
-        $request = new ListModelsRequest();
-        $response = $this->doRequest($request);
+        $request = new ModelList();
+        $response = $this->makeRequest($request);
         $json = json_decode($response, associative: true);
 
-        return ListModelsResponse::fromArray($json);
+        return ModelResponse::fromArray($json);
     }
 
     public function withBaseUrl(string $baseUrl): self
